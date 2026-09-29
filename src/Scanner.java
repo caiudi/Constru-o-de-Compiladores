@@ -483,50 +483,78 @@ public class Scanner {
         );
     }
 
-    private void ignorarEspacosEComentarios() {
+    private Token ignorarEspacosEComentarios() {
 
-        boolean continuar = true;
+    boolean continuar = true;
 
-        while (continuar && hasNext()) {
+    while (continuar && hasNext()) {
 
-            continuar = false;
+        continuar = false;
 
-            // Ignora espacos.
-            while (hasNext() && Character.isWhitespace(peek())) {
+        // Ignora espaços, tabs e quebras de linha
+        while (hasNext() && Character.isWhitespace(peek())) {
+            advance();
+        }
+
+        // Comentário de uma linha
+        if (peek() == '/' && peekNext() == '/') {
+
+            while (hasNext() && peek() != '\n') {
                 advance();
             }
 
-            // Comentario de uma linha.
-            if (peek() == '/' && peekNext() == '/') {
+            continuar = true;
+        }
 
-                while (hasNext() && peek() != '\n') {
-                    advance();
+        // Comentário de bloco
+        else if (peek() == '/' && peekNext() == '*') {
+
+            int linhaInicial = linha;
+            int colunaInicial = coluna;
+
+            advance(); // /
+            advance(); // *
+
+            boolean fechado = false;
+
+            while (hasNext()) {
+
+                if (peek() == '*' && peekNext() == '/') {
+
+                    advance(); // *
+                    advance(); // /
+
+                    fechado = true;
+                    continuar = true;
+                    break;
                 }
 
-                continuar = true;
+                advance();
             }
 
-            // Comentario de bloco.
-            else if (peek() == '/' && peekNext() == '*') {
+            // Chegou ao EOF sem encontrar */
+            if (!fechado) {
 
-                advance();
-                advance();
+                System.err.println(
+                        "Erro lexico na linha "
+                        + linhaInicial
+                        + ", coluna "
+                        + colunaInicial
+                        + ": comentario de bloco nao fechado."
+                );
 
-                while (hasNext()) {
-
-                    if (peek() == '*' && peekNext() == '/') {
-                        advance();
-                        advance();
-                        continuar = true;
-                        break;
-                    }
-
-                    advance();
-                }
+                return new Token(
+                        TokenType.ERRO,
+                        "/*",
+                        linhaInicial,
+                        colunaInicial
+                );
             }
         }
     }
 
+    return null;
+}
     private Token erro(
             String lexema,
             int linhaErro,
