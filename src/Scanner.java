@@ -372,76 +372,109 @@ public class Scanner {
      * AFD para strings.
      */
     private Token reconhecerString(
-            int linhaInicial,
-            int colunaInicial) {
+        int linhaInicial,
+        int colunaInicial) {
 
-        StringBuilder lexema = new StringBuilder();
+    StringBuilder lexema = new StringBuilder();
 
-        // Consome a primeira aspas.
-        lexema.append(advance());
+    // Estado inicial: consome as aspas de abertura
+    lexema.append(advance());
 
-        while (hasNext()) {
+    while (hasNext()) {
 
-            char atual = peek();
+        char atual = peek();
 
-            // String fechada corretamente.
-            if (atual == '"') {
-                lexema.append(advance());
+        // Estado de aceitação: encontrou as aspas de fechamento
+        if (atual == '"') {
 
-                return new Token(
-                        TokenType.STRING_LITERAL,
-                        lexema.toString(),
-                        linhaInicial,
-                        colunaInicial
-                );
-            }
+            lexema.append(advance());
 
-            // String nao pode continuar em outra linha.
-            if (atual == '\n') {
-                return erro(
-                        lexema.toString(),
-                        linhaInicial,
-                        colunaInicial
-                );
-            }
-
-            // Tratamento dos escapes.
-            if (atual == '\\') {
-
-                lexema.append(advance());
-
-                if (!hasNext()) {
-                    return erro(
-                            lexema.toString(),
-                            linhaInicial,
-                            colunaInicial
-                    );
-                }
-
-                char escape = peek();
-
-                if (escape == '"' ||
-                    escape == '\\' ||
-                    escape == 'n' ||
-                    escape == 't') {
-
-                    lexema.append(advance());
-
-                } else {
-                    lexema.append(advance());
-
-                    return erro(
-                            lexema.toString(),
-                            linhaInicial,
-                            colunaInicial
-                    );
-                }
-
-            } else {
-                lexema.append(advance());
-            }
+            return new Token(
+                    TokenType.STRING_LITERAL,
+                    lexema.toString(),
+                    linhaInicial,
+                    colunaInicial
+            );
         }
 
+        // A linguagem não permite string em mais de uma linha
+        if (atual == '\n') {
+
+            System.err.println(
+                    "Erro lexico na linha "
+                    + linhaInicial
+                    + ", coluna "
+                    + colunaInicial
+                    + ": string nao fechada."
+            );
+
+            return new Token(
+                    TokenType.ERRO,
+                    lexema.toString(),
+                    linhaInicial,
+                    colunaInicial
+            );
+        }
+
+        // Tratamento das sequências de escape
+        if (atual == '\\') {
+
+            lexema.append(advance());
+
+            if (!hasNext()) {
+                break;
+            }
+
+            char escape = peek();
+
+            if (escape == '"' ||
+                escape == '\\' ||
+                escape == 'n' ||
+                escape == 't') {
+
+                lexema.append(advance());
+
+            } else {
+
+                lexema.append(advance());
+
+                System.err.println(
+                        "Erro lexico na linha "
+                        + linhaInicial
+                        + ", coluna "
+                        + colunaInicial
+                        + ": sequencia de escape invalida."
+                );
+
+                return new Token(
+                        TokenType.ERRO,
+                        lexema.toString(),
+                        linhaInicial,
+                        colunaInicial
+                );
+            }
+
+        } else {
+            lexema.append(advance());
+        }
+    }
+
+    // EOF antes das aspas de fechamento
+    System.err.println(
+            "Erro lexico na linha "
+            + linhaInicial
+            + ", coluna "
+            + colunaInicial
+            + ": string nao fechada antes do EOF."
+    );
+
+    return new Token(
+            TokenType.ERRO,
+            lexema.toString(),
+            linhaInicial,
+            colunaInicial
+    );
+}
         // EOF antes de fechar a string.
         return erro(
                 lexema.toString(),
