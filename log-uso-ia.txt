@@ -1,0 +1,13 @@
+# Log de Uso de Inteligência Artificial
+
+Durante o desenvolvimento do Checkpoint 1, foi utilizada a ferramenta ChatGPT como apoio pontual durante a implementação e revisão do trabalho.
+
+## Utilizações
+
+- Consulta sobre a organização das classes `Token`, `TokenType` e `Scanner`.
+- Apoio na estruturação inicial de trechos do analisador léxico, posteriormente revisados e adaptados de acordo com a especificação definida para a linguagem.
+- Esclarecimento de dúvidas sobre o funcionamento dos métodos `peek()`, `advance()`, `hasNext()` e `nextToken()`.
+- Revisão da implementação do maximal munch para operadores simples e compostos.
+- Auxílio na identificação e correção do tratamento de erros léxicos, principalmente strings e comentários não finalizados.
+- Revisão da correspondência entre os estados dos AFDs e a implementação no código.
+- Apoio na elaboração e revisão dos casos da suíte de testes.
