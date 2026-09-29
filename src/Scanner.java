@@ -33,12 +33,12 @@ public class Scanner {
         this.coluna = 1;
     }
 
-    // Verifica se ainda existem caracteres para serem lidos.
+    // Verifica se ainda existem caracteres para leitura
     public boolean hasNext() {
         return cursor < codigoFonte.length();
     }
 
-    // Retorna o caractere atual sem consumi-lo.
+    // Retorna o caractere atual sem consumi-lo
     public char peek() {
         if (!hasNext()) {
             return '\0';
@@ -47,7 +47,7 @@ public class Scanner {
         return codigoFonte.charAt(cursor);
     }
 
-    // Retorna o próximo caractere sem consumi-lo.
+    // Retorna o próximo caractere sem consumi-lo
     private char peekNext() {
         if (cursor + 1 >= codigoFonte.length()) {
             return '\0';
@@ -56,14 +56,14 @@ public class Scanner {
         return codigoFonte.charAt(cursor + 1);
     }
 
-    // Consome o caractere atual e avança o cursor.
+    // Consome o caractere atual
     public char advance() {
-        char atual = peek();
 
         if (!hasNext()) {
             return '\0';
         }
 
+        char atual = codigoFonte.charAt(cursor);
         cursor++;
 
         if (atual == '\n') {
@@ -76,13 +76,25 @@ public class Scanner {
         return atual;
     }
 
+    // Retorna o próximo token encontrado
     public Token nextToken() {
 
-        // Ignora espaços e comentários antes de procurar o próximo token.
-        ignorarEspacosEComentarios();
+        // Ignora espaços e comentários.
+        // Caso exista erro em comentário, retorna o token de erro.
+        Token erroComentario = ignorarEspacosEComentarios();
 
+        if (erroComentario != null) {
+            return erroComentario;
+        }
+
+        // Fim do arquivo
         if (!hasNext()) {
-            return new Token(TokenType.EOF, "", linha, coluna);
+            return new Token(
+                    TokenType.EOF,
+                    "",
+                    linha,
+                    coluna
+            );
         }
 
         int linhaInicial = linha;
@@ -90,201 +102,287 @@ public class Scanner {
 
         char atual = peek();
 
-        // AFD de identificadores e palavras reservadas.
+        // Identificador ou palavra reservada
         if (Character.isLetter(atual)) {
-            return reconhecerIdentificador(linhaInicial, colunaInicial);
+            return reconhecerIdentificador(
+                    linhaInicial,
+                    colunaInicial
+            );
         }
 
-        // AFD de números.
+        // Literal numérico
         if (Character.isDigit(atual)) {
-            return reconhecerNumero(linhaInicial, colunaInicial);
+            return reconhecerNumero(
+                    linhaInicial,
+                    colunaInicial
+            );
         }
 
-        // AFD de strings.
+        // String
         if (atual == '"') {
-            return reconhecerString(linhaInicial, colunaInicial);
+            return reconhecerString(
+                    linhaInicial,
+                    colunaInicial
+            );
         }
 
-        // Operadores e delimitadores.
+        // Operadores e delimitadores
         switch (atual) {
 
             case '+':
                 advance();
+
                 return new Token(
-                        TokenType.MAIS, "+",
-                        linhaInicial, colunaInicial
+                        TokenType.MAIS,
+                        "+",
+                        linhaInicial,
+                        colunaInicial
                 );
 
             case '-':
                 advance();
+
                 return new Token(
-                        TokenType.MENOS, "-",
-                        linhaInicial, colunaInicial
+                        TokenType.MENOS,
+                        "-",
+                        linhaInicial,
+                        colunaInicial
                 );
 
             case '*':
                 advance();
+
                 return new Token(
-                        TokenType.MULTIPLICACAO, "*",
-                        linhaInicial, colunaInicial
+                        TokenType.MULTIPLICACAO,
+                        "*",
+                        linhaInicial,
+                        colunaInicial
                 );
 
             case '/':
                 advance();
+
                 return new Token(
-                        TokenType.DIVISAO, "/",
-                        linhaInicial, colunaInicial
+                        TokenType.DIVISAO,
+                        "/",
+                        linhaInicial,
+                        colunaInicial
                 );
 
             case '=':
                 advance();
 
+                // Maximal munch: tenta reconhecer ==
                 if (peek() == '=') {
                     advance();
+
                     return new Token(
-                            TokenType.IGUAL, "==",
-                            linhaInicial, colunaInicial
+                            TokenType.IGUAL,
+                            "==",
+                            linhaInicial,
+                            colunaInicial
                     );
                 }
 
                 return new Token(
-                        TokenType.ATRIBUICAO, "=",
-                        linhaInicial, colunaInicial
+                        TokenType.ATRIBUICAO,
+                        "=",
+                        linhaInicial,
+                        colunaInicial
                 );
 
             case '!':
                 advance();
 
+                // Maximal munch: tenta reconhecer !=
                 if (peek() == '=') {
                     advance();
+
                     return new Token(
-                            TokenType.DIFERENTE, "!=",
-                            linhaInicial, colunaInicial
+                            TokenType.DIFERENTE,
+                            "!=",
+                            linhaInicial,
+                            colunaInicial
                     );
                 }
 
                 return new Token(
-                        TokenType.NEGACAO, "!",
-                        linhaInicial, colunaInicial
+                        TokenType.NEGACAO,
+                        "!",
+                        linhaInicial,
+                        colunaInicial
                 );
 
             case '<':
                 advance();
 
+                // Maximal munch: tenta reconhecer <=
                 if (peek() == '=') {
                     advance();
+
                     return new Token(
-                            TokenType.MENOR_IGUAL, "<=",
-                            linhaInicial, colunaInicial
+                            TokenType.MENOR_IGUAL,
+                            "<=",
+                            linhaInicial,
+                            colunaInicial
                     );
                 }
 
                 return new Token(
-                        TokenType.MENOR, "<",
-                        linhaInicial, colunaInicial
+                        TokenType.MENOR,
+                        "<",
+                        linhaInicial,
+                        colunaInicial
                 );
 
             case '>':
                 advance();
 
+                // Maximal munch: tenta reconhecer >=
                 if (peek() == '=') {
                     advance();
+
                     return new Token(
-                            TokenType.MAIOR_IGUAL, ">=",
-                            linhaInicial, colunaInicial
+                            TokenType.MAIOR_IGUAL,
+                            ">=",
+                            linhaInicial,
+                            colunaInicial
                     );
                 }
 
                 return new Token(
-                        TokenType.MAIOR, ">",
-                        linhaInicial, colunaInicial
+                        TokenType.MAIOR,
+                        ">",
+                        linhaInicial,
+                        colunaInicial
                 );
 
             case '&':
                 advance();
 
+                // && é válido, & sozinho não é
                 if (peek() == '&') {
                     advance();
+
                     return new Token(
-                            TokenType.E_LOGICO, "&&",
-                            linhaInicial, colunaInicial
+                            TokenType.E_LOGICO,
+                            "&&",
+                            linhaInicial,
+                            colunaInicial
                     );
                 }
 
-                return erro("&", linhaInicial, colunaInicial);
+                return erro(
+                        "&",
+                        linhaInicial,
+                        colunaInicial,
+                        "operador invalido"
+                );
 
             case '|':
                 advance();
 
+                // || é válido, | sozinho não é
                 if (peek() == '|') {
                     advance();
+
                     return new Token(
-                            TokenType.OU_LOGICO, "||",
-                            linhaInicial, colunaInicial
+                            TokenType.OU_LOGICO,
+                            "||",
+                            linhaInicial,
+                            colunaInicial
                     );
                 }
 
-                return erro("|", linhaInicial, colunaInicial);
+                return erro(
+                        "|",
+                        linhaInicial,
+                        colunaInicial,
+                        "operador invalido"
+                );
 
             case '(':
                 advance();
+
                 return new Token(
-                        TokenType.ABRE_PARENTESES, "(",
-                        linhaInicial, colunaInicial
+                        TokenType.ABRE_PARENTESES,
+                        "(",
+                        linhaInicial,
+                        colunaInicial
                 );
 
             case ')':
                 advance();
+
                 return new Token(
-                        TokenType.FECHA_PARENTESES, ")",
-                        linhaInicial, colunaInicial
+                        TokenType.FECHA_PARENTESES,
+                        ")",
+                        linhaInicial,
+                        colunaInicial
                 );
 
             case '{':
                 advance();
+
                 return new Token(
-                        TokenType.ABRE_CHAVES, "{",
-                        linhaInicial, colunaInicial
+                        TokenType.ABRE_CHAVES,
+                        "{",
+                        linhaInicial,
+                        colunaInicial
                 );
 
             case '}':
                 advance();
+
                 return new Token(
-                        TokenType.FECHA_CHAVES, "}",
-                        linhaInicial, colunaInicial
+                        TokenType.FECHA_CHAVES,
+                        "}",
+                        linhaInicial,
+                        colunaInicial
                 );
 
             case ',':
                 advance();
+
                 return new Token(
-                        TokenType.VIRGULA, ",",
-                        linhaInicial, colunaInicial
+                        TokenType.VIRGULA,
+                        ",",
+                        linhaInicial,
+                        colunaInicial
                 );
 
             case ';':
                 advance();
+
                 return new Token(
-                        TokenType.PONTO_VIRGULA, ";",
-                        linhaInicial, colunaInicial
+                        TokenType.PONTO_VIRGULA,
+                        ";",
+                        linhaInicial,
+                        colunaInicial
                 );
 
             default:
-                String caractereInvalido = String.valueOf(advance());
+
+                // Caractere que não pertence ao alfabeto
+                String caractereInvalido =
+                        String.valueOf(advance());
+
                 return erro(
                         caractereInvalido,
                         linhaInicial,
-                        colunaInicial
+                        colunaInicial,
+                        "caractere invalido"
                 );
         }
     }
 
     /*
-     * AFD para identificadores:
+     * AFD DE IDENTIFICADOR
      *
      * q0 -- letra --> q1
      * q1 -- letra/digito/_ --> q1
      *
-     * q1 e estado de aceitacao.
+     * q1 = estado de aceitacao
      */
     private Token reconhecerIdentificador(
             int linhaInicial,
@@ -300,8 +398,11 @@ public class Scanner {
 
             char atual = peek();
 
-            if (Character.isLetterOrDigit(atual) || atual == '_') {
+            if (Character.isLetterOrDigit(atual)
+                    || atual == '_') {
+
                 lexema.append(advance());
+
             } else {
                 break;
             }
@@ -309,12 +410,20 @@ public class Scanner {
 
         String texto = lexema.toString();
 
-        // Verifica o limite definido na especificacao.
+        // Limite definido na especificação
         if (texto.length() > 64) {
-            return erro(texto, linhaInicial, colunaInicial);
+
+            return erro(
+                    texto,
+                    linhaInicial,
+                    colunaInicial,
+                    "identificador possui mais de 64 caracteres"
+            );
         }
 
-        TokenType tipo = PALAVRAS_RESERVADAS.get(texto);
+        // Verifica se o identificador é uma palavra reservada
+        TokenType tipo =
+                PALAVRAS_RESERVADAS.get(texto);
 
         if (tipo == null) {
             tipo = TokenType.IDENTIFICADOR;
@@ -329,13 +438,15 @@ public class Scanner {
     }
 
     /*
-     * AFD para numeros:
+     * AFD DE NUMERO
      *
      * q0 -- digito --> q1
      * q1 -- digito --> q1
      * q1 -- . --> q2
      * q2 -- digito --> q3
      * q3 -- digito --> q3
+     *
+     * q1 e q3 = estados de aceitacao
      */
     private Token reconhecerNumero(
             int linhaInicial,
@@ -343,19 +454,24 @@ public class Scanner {
 
         StringBuilder lexema = new StringBuilder();
 
-        // Estado q1: parte inteira.
-        while (hasNext() && Character.isDigit(peek())) {
+        // Estado q1: parte inteira
+        while (hasNext()
+                && Character.isDigit(peek())) {
+
             lexema.append(advance());
         }
 
-        // Verifica se existe parte decimal.
-        if (peek() == '.' && Character.isDigit(peekNext())) {
+        // Verifica se existe uma parte decimal
+        if (peek() == '.'
+                && Character.isDigit(peekNext())) {
 
             // q1 -> q2
             lexema.append(advance());
 
             // q2 -> q3
-            while (hasNext() && Character.isDigit(peek())) {
+            while (hasNext()
+                    && Character.isDigit(peek())) {
+
                 lexema.append(advance());
             }
         }
@@ -369,204 +485,220 @@ public class Scanner {
     }
 
     /*
-     * AFD para strings.
+     * AFD DE STRING
+     *
+     * q0 -- " --> q1
+     * q1 -- caractere valido --> q1
+     * q1 -- \ --> qEscape
+     * qEscape -- escape valido --> q1
+     * q1 -- " --> q2
+     *
+     * q2 = estado de aceitacao
      */
     private Token reconhecerString(
-        int linhaInicial,
-        int colunaInicial) {
+            int linhaInicial,
+            int colunaInicial) {
 
-    StringBuilder lexema = new StringBuilder();
+        StringBuilder lexema =
+                new StringBuilder();
 
-    // Estado inicial: consome as aspas de abertura
-    lexema.append(advance());
+        // q0 -> q1
+        // Consome as aspas de abertura
+        lexema.append(advance());
 
-    while (hasNext()) {
+        while (hasNext()) {
 
-        char atual = peek();
+            char atual = peek();
 
-        // Estado de aceitação: encontrou as aspas de fechamento
-        if (atual == '"') {
-
-            lexema.append(advance());
-
-            return new Token(
-                    TokenType.STRING_LITERAL,
-                    lexema.toString(),
-                    linhaInicial,
-                    colunaInicial
-            );
-        }
-
-        // A linguagem não permite string em mais de uma linha
-        if (atual == '\n') {
-
-            System.err.println(
-                    "Erro lexico na linha "
-                    + linhaInicial
-                    + ", coluna "
-                    + colunaInicial
-                    + ": string nao fechada."
-            );
-
-            return new Token(
-                    TokenType.ERRO,
-                    lexema.toString(),
-                    linhaInicial,
-                    colunaInicial
-            );
-        }
-
-        // Tratamento das sequências de escape
-        if (atual == '\\') {
-
-            lexema.append(advance());
-
-            if (!hasNext()) {
-                break;
-            }
-
-            char escape = peek();
-
-            if (escape == '"' ||
-                escape == '\\' ||
-                escape == 'n' ||
-                escape == 't') {
+            // q1 -> q2
+            // Encontrou as aspas de fechamento
+            if (atual == '"') {
 
                 lexema.append(advance());
-
-            } else {
-
-                lexema.append(advance());
-
-                System.err.println(
-                        "Erro lexico na linha "
-                        + linhaInicial
-                        + ", coluna "
-                        + colunaInicial
-                        + ": sequencia de escape invalida."
-                );
 
                 return new Token(
-                        TokenType.ERRO,
+                        TokenType.STRING_LITERAL,
                         lexema.toString(),
                         linhaInicial,
                         colunaInicial
                 );
             }
 
-        } else {
-            lexema.append(advance());
+            // Strings não podem ocupar mais de uma linha
+            if (atual == '\n') {
+
+                return erro(
+                        lexema.toString(),
+                        linhaInicial,
+                        colunaInicial,
+                        "string nao fechada antes do fim da linha"
+                );
+            }
+
+            // Estado de escape
+            if (atual == '\\') {
+
+                lexema.append(advance());
+
+                // EOF logo após a barra invertida
+                if (!hasNext()) {
+
+                    return erro(
+                            lexema.toString(),
+                            linhaInicial,
+                            colunaInicial,
+                            "string nao fechada antes do EOF"
+                    );
+                }
+
+                char escape = peek();
+
+                // Escapes permitidos pela especificação
+                if (escape == '"'
+                        || escape == '\\'
+                        || escape == 'n'
+                        || escape == 't') {
+
+                    lexema.append(advance());
+
+                } else {
+
+                    lexema.append(advance());
+
+                    return erro(
+                            lexema.toString(),
+                            linhaInicial,
+                            colunaInicial,
+                            "sequencia de escape invalida"
+                    );
+                }
+
+            } else {
+
+                // Caractere comum da string
+                lexema.append(advance());
+            }
         }
-    }
 
-    // EOF antes das aspas de fechamento
-    System.err.println(
-            "Erro lexico na linha "
-            + linhaInicial
-            + ", coluna "
-            + colunaInicial
-            + ": string nao fechada antes do EOF."
-    );
-
-    return new Token(
-            TokenType.ERRO,
-            lexema.toString(),
-            linhaInicial,
-            colunaInicial
-    );
-}
-        // EOF antes de fechar a string.
+        // EOF antes de encontrar as aspas finais
         return erro(
                 lexema.toString(),
                 linhaInicial,
-                colunaInicial
+                colunaInicial,
+                "string nao fechada antes do EOF"
         );
     }
 
+    /*
+     * Ignora:
+     *
+     * - espaços
+     * - tabulações
+     * - quebras de linha
+     * - comentários //
+     * - comentários de bloco
+     *
+     * Caso um comentário de bloco não seja fechado,
+     * retorna um Token de erro.
+     */
     private Token ignorarEspacosEComentarios() {
 
-    boolean continuar = true;
+        boolean continuar = true;
 
-    while (continuar && hasNext()) {
+        while (continuar && hasNext()) {
 
-        continuar = false;
+            continuar = false;
 
-        // Ignora espaços, tabs e quebras de linha
-        while (hasNext() && Character.isWhitespace(peek())) {
-            advance();
-        }
+            // Espaços em branco
+            while (hasNext()
+                    && Character.isWhitespace(peek())) {
 
-        // Comentário de uma linha
-        if (peek() == '/' && peekNext() == '/') {
-
-            while (hasNext() && peek() != '\n') {
                 advance();
             }
 
-            continuar = true;
-        }
+            // Comentário de uma linha
+            if (peek() == '/'
+                    && peekNext() == '/') {
 
-        // Comentário de bloco
-        else if (peek() == '/' && peekNext() == '*') {
+                // Consome //
+                advance();
+                advance();
 
-            int linhaInicial = linha;
-            int colunaInicial = coluna;
+                while (hasNext()
+                        && peek() != '\n') {
 
-            advance(); // /
-            advance(); // *
-
-            boolean fechado = false;
-
-            while (hasNext()) {
-
-                if (peek() == '*' && peekNext() == '/') {
-
-                    advance(); // *
-                    advance(); // /
-
-                    fechado = true;
-                    continuar = true;
-                    break;
+                    advance();
                 }
 
-                advance();
+                continuar = true;
             }
 
-            // Chegou ao EOF sem encontrar */
-            if (!fechado) {
+            // Comentário de bloco
+            else if (peek() == '/'
+                    && peekNext() == '*') {
 
-                System.err.println(
-                        "Erro lexico na linha "
-                        + linhaInicial
-                        + ", coluna "
-                        + colunaInicial
-                        + ": comentario de bloco nao fechado."
-                );
+                int linhaInicial = linha;
+                int colunaInicial = coluna;
 
-                return new Token(
-                        TokenType.ERRO,
-                        "/*",
-                        linhaInicial,
-                        colunaInicial
-                );
+                // Consome /*
+                advance();
+                advance();
+
+                boolean fechado = false;
+
+                while (hasNext()) {
+
+                    if (peek() == '*'
+                            && peekNext() == '/') {
+
+                        // Consome */
+                        advance();
+                        advance();
+
+                        fechado = true;
+                        continuar = true;
+
+                        break;
+                    }
+
+                    advance();
+                }
+
+                // EOF antes do fechamento */
+                if (!fechado) {
+
+                    return erro(
+                            "/*",
+                            linhaInicial,
+                            colunaInicial,
+                            "comentario de bloco nao fechado antes do EOF"
+                    );
+                }
             }
         }
+
+        return null;
     }
 
-    return null;
-}
+    /*
+     * Tratamento padrão dos erros léxicos.
+     */
     private Token erro(
             String lexema,
             int linhaErro,
-            int colunaErro) {
+            int colunaErro,
+            String mensagem) {
 
         System.err.println(
                 "Erro lexico na linha "
-                + linhaErro
-                + ", coluna "
-                + colunaErro
-                + ": "
-                + lexema
+                        + linhaErro
+                        + ", coluna "
+                        + colunaErro
+                        + ": "
+                        + mensagem
+                        + " ["
+                        + lexema
+                        + "]"
         );
 
         return new Token(
